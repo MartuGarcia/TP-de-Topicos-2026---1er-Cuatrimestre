@@ -1,0 +1,13 @@
+# depslib dependency file v1.0
+1779582601 source:c:\users\martu\documents\topicos de programacion\tp-enut-mn\trabajo practico topicos\funciones.c
+	<stdio.h>
+	<stdlib.h>
+	"Prototipos.h"
+
+1779582456 c:\users\martu\documents\topicos de programacion\tp-enut-mn\trabajo practico topicos\prototipos.h
+
+1779582613 source:c:\users\martu\documents\topicos de programacion\tp-enut-mn\trabajo practico topicos\main.c
+	<stdio.h>
+	<stdlib.h>
+	"Prototipos.h"
+
