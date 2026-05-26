@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include "Prototipos.h"
 
-#define MAXLINEA 5000
+#define MAXLINEA 50000
 #define REGIONES 6
 
 #define REDIMENCION 50
