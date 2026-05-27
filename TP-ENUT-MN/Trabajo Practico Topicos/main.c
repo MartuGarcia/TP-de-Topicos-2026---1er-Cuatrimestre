@@ -13,5 +13,8 @@ int main()
     //punto 2)
     //leerArchivoPunto2(nombreArch);
 
+    ///punto 3)
+    leerArchivoPunto3(nombreArch);
+
     return 0;
 }
