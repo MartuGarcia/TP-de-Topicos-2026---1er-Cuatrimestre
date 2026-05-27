@@ -8,14 +8,21 @@
 #define REDIMENCION 50
 #define CAPINI 100
 
-//variable global
+/// //////////////////////////////////////variables globales
 const char* nombresRegiones[] =
 {
     "GBA", "PAMPEANA", "NOROESTE",
     "NORESTE", "CUYO", "PATAGONIA"
 };
+const char *nombresFilas[] =
+{
+        "Solo hasta 13 anios",
+        "Solo 14 y mas",
+        "Ambos tipos",
+        "Sin demandantes"
+};
 
-///vectores y memoria dinamica
+/// //////////////////////////////////////vectores y memoria dinamica
 void* crearVector(size_t capInicial,size_t tamElem)
 {
     void *vec = malloc (capInicial*tamElem);
@@ -46,7 +53,53 @@ int redimensionarVector(void **vec, size_t *cap, size_t tamElem)
     *cap = capNueva;
     return 1;
 }
+/// /////////////////////////////////////matrices y memoria dinamica
+void** crearMatriz(int filas, int columnas, size_t tam)
+{
+    int i;
+    void* punteroFila;
+    void** matBase;
+    void** matriz = malloc(filas*sizeof(void*)); //reserva memoria para matriz de punteros a filas, primer lugar de cada fila
 
+    if(!matriz)
+    {
+        return NULL;
+    }
+    //tiene un puntero a la primera fila del vector de punteros a filas
+    matBase = matriz; //guardo la direccion de la matriz para luego devolverla
+    for(i=0; i<filas; i++)
+    {
+        punteroFila = malloc(columnas*tam); //reserva memoria para cada fila entera osea para
+        if(!punteroFila)
+        {
+            return NULL;
+        }
+        *matriz = punteroFila; //guarda la direccion de la fila en el vector de punteros a filas
+        matriz++; //avanza el puntero de la matriz al siguiente lugar para guardar la direccion de la siguiente fila
+    }
+    return matBase;
+}
+void inicializarMatriz(void **matriz, int filas, int columnas)
+{
+    for(int i = 0; i < filas; i++)
+    {
+        long *fila = (long*)matriz[i];
+
+        for(int j = 0; j < columnas; j++)
+        {
+            fila[j] = 0;
+        }
+    }
+}
+void destruirMatriz(void** matriz, int filas)
+{
+    for(int i = 0; i < filas; i++)
+    {
+        free(matriz[i]);
+    }
+
+    free(matriz);
+}
 ///Punto 1)
 void mostrarPunto1(Region *vec)
 {
@@ -136,33 +189,33 @@ void leerArchivoPunto1(const char *nombreArchivo)
 
 int trozarLineaPunto1(char *linea,int *region,long *whog, long *wper)
 {
-    char* actualLinea = linea;
+    char *campo = linea;
     int numCampo = 0;
 
     *region =0;
     *whog =0;
     *wper =0;
 
-    actualLinea = miStrtok(linea," \t\n");
+    campo = miStrtok(linea," \t\n");
 
-    while(actualLinea != NULL)
+    while(campo != NULL)
     {
-        if(!(*actualLinea == 'N' && *(actualLinea+1) == 'A'))
+        if(miStrcmp(campo,"NA")!=0)
         {
             if(numCampo ==1)
             {
-                *whog = miAtoi(actualLinea);
+                *whog = miAtoi(campo);
             }
             else if (numCampo == 2)
             {
-                *wper = miAtoi(actualLinea);
+                *wper = miAtoi(campo);
             }
             else if (numCampo == 3)
             {
-                *region = miAtoi(actualLinea);
+                *region = miAtoi(campo);
             }
         }
-        actualLinea = miStrtok(NULL," \t\n");
+        campo = miStrtok(NULL," \t\n");
         numCampo++;
     }
     return (*region >= 1 && *region <= 6);
@@ -358,7 +411,7 @@ void mostrarPunto2(void *vec, size_t ce)
     Registros *fin = p + ce;
     //como son muchos registros los primeros no los muestra
     //asi que por eso puse un contador para ver si los primeros datos los mostraba bien
-    //int cont =0;
+    int cont =0;
 
     printf("\n==============================================================================================================================\n");
     printf("%-12s %-12s %-12s %-8s %-8s %-8s %-12s %-12s %-12s %-15s\n",
@@ -366,7 +419,7 @@ void mostrarPunto2(void *vec, size_t ce)
            "TP_OC", "TP_TR", "TP_TNR", "GRUPO_EDAD");
     printf("================================================================================================================================\n");
 
-    while(p < fin /*&& cont <20*/)
+    while(p < fin && cont <20)
     {
         printf("%-12ld %-12ld %-12ld %-8d %-8d %-8d %-12d %-12d %-12d %-15s\n",
                p->id,
@@ -379,7 +432,7 @@ void mostrarPunto2(void *vec, size_t ce)
                p->tp_trabajo,
                p->tp_tnr,
                p->grupoEdad);
-               //cont++;
+               cont++;
         p++;
     }
 
@@ -390,7 +443,7 @@ void leerArchivoPunto2(const char *nombreArchivo)
     FILE *fp = fopen(nombreArchivo,"rt");
     if(!fp)
     {
-        printf("Error al abrir archivo\n");
+        printf("Error al abrir archivo (enut2021_base.csv)\n");
         return;
     }
     size_t ce = 0; //inicialmente hay 0 elementos en el vector de estructuras
@@ -427,6 +480,7 @@ void leerArchivoPunto2(const char *nombreArchivo)
     destruirVector(&vec);
 }
 //los campos no estan todos ordenados entonces hay que buscarlos
+//es una funcion para reutilizar cada vez que necesito buscar los campos
 void obtenerPosicionesCampos(char *linea, PosicionesCampos *pos)
 {
     char *campo;
@@ -440,6 +494,7 @@ void obtenerPosicionesCampos(char *linea, PosicionesCampos *pos)
     pos->pos_tp_ocupacion = -1;
     pos->pos_tp_trabajo = -1;
     pos->pos_tp_tnr = -1;
+    pos->pos_tipo_hogar = -1;
 
     campo = miStrtok(linea, " \t\n");
 
@@ -464,11 +519,14 @@ void obtenerPosicionesCampos(char *linea, PosicionesCampos *pos)
             pos->pos_tp_trabajo = numCampo;
         else if(miStrcmp(campo, "TP_GRANGRUPO_TNR") == 0)
             pos->pos_tp_tnr = numCampo;
+        else if(miStrcmp(campo, "TIPO_HOGAR_DCPOREDAD") == 0)
+            pos->pos_tipo_hogar = numCampo;
 
         campo = miStrtok(NULL, " \t\n");
         numCampo++;
     }
 }
+//los nombres de los campos tienen comillas asi que se las saco para comparar
 void sacarComillasCampos(char *str)
 {
     char *inicio = str;
@@ -520,28 +578,20 @@ int trozarLineaPunto2(char *linea, Registros *reg, PosicionesCampos *pos)
         {
             if(numCampo == pos->pos_id)
                 reg->id = miAtoi(campo);
-
             else if(numCampo == pos->pos_whog)
                 reg->whog = miAtoi(campo);
-
             else if(numCampo == pos->pos_wper)
                 reg->wper = miAtoi(campo);
-
             else if(numCampo == pos->pos_region)
                 reg->region = miAtoi(campo);
-
             else if(numCampo == pos->pos_sexo)
                 reg->sexo = miAtoi(campo);
-
             else if(numCampo == pos->pos_edad)
                 reg->edad = miAtoi(campo);
-
             else if(numCampo == pos->pos_tp_ocupacion)
                 reg->tp_ocupacion = miAtoi(campo);
-
             else if(numCampo == pos->pos_tp_trabajo)
                 reg->tp_trabajo = miAtoi(campo);
-
             else if(numCampo == pos->pos_tp_tnr)
                 reg->tp_tnr = miAtoi(campo);
         }
@@ -584,4 +634,141 @@ int insertarElementoPunto2(void **vec, size_t *ce, size_t *cap, void *elem, size
 
     return 1;
 }
+
+/// Punto 3)
+void mostrarPunto3(void **mat, int filas, int columnas)
+{
+    int i, j;
+
+    printf("\n=================================================================================================================\n");
+
+    // encabezado
+    //recorro con el for para nombrar las columnas
+    printf("%-25s", "tipo_hogar_desc");
+
+    for(j = 0; j < columnas; j++)
+    {
+        printf("%-12s", nombresRegiones[j]);
+    }
+
+    printf("\n=================================================================================================================\n");
+
+    // cuerpo
+    //aca recorro la fila para poner los nombres
+    //imprimo los valores
+    for(i = 0; i < filas; i++)
+    {
+        printf("%-25s", nombresFilas[i]);
+
+        long *filaMat = (long*)*(mat + i);
+    //recorro columna
+        for(j = 0; j < columnas; j++)
+        {
+            //imprimo el whog
+            printf("%-12ld", *(filaMat + j));
+        }
+
+        printf("\n");
+    }
+
+    printf("=================================================================================================================\n");
+}
+void leerArchivoPunto3(const char *nombreArchivo)
+{
+    FILE *fp = fopen(nombreArchivo, "rt");
+    if(!fp)
+    {
+        printf("Error al abrir archivo (enut2021_base.csv)\n");
+        return;
+    }
+
+    char linea[MAXLINEA];
+    Registros reg;
+    PosicionesCampos pos;
+
+    int filas = 4; // porque 1,2,3,NA
+    int columnas = REGIONES; // son 6 regiones
+    //auxiliares
+    int fila;
+    int col;
+
+    void **mat = crearMatriz(filas, columnas, sizeof(long));
+    if(!mat)
+    {
+        printf("Error al crear la matriz dinamica\n");
+        fclose(fp);
+        return;
+    }
+    //limpio la matriz de basura, inicializo en cero
+    inicializarMatriz(mat,filas,columnas);
+
+    fgets(linea, MAXLINEA, fp);
+    obtenerPosicionesCampos(linea, &pos);
+    while(fgets(linea, MAXLINEA, fp))
+    {
+        if(trozarLineaPunto3(linea, &reg, &pos))
+        {
+            //determino la fila segun el tipo de hogar
+            if(reg.tipo_hogar == 1)
+                fila = 0;
+            else if(reg.tipo_hogar == 2)
+                fila = 1;
+            else if(reg.tipo_hogar == 3)
+                fila = 2;
+            else
+                fila = 3; //NA
+            //determino la columna segun la region
+             col = reg.region - 1;
+
+             //accedo a la fila correspondiente y acumulo WHOG y lo pongo donde correspone
+            long *filaMat = (long*)*(mat + fila);
+            *(filaMat + col) += reg.whog;
+        }
+    }
+
+    fclose(fp);
+    mostrarPunto3(mat, filas, columnas);
+    destruirMatriz(mat, filas); //libero/destruyo matriz
+}
+
+int trozarLineaPunto3(char *linea, Registros *reg, PosicionesCampos *pos)
+{
+    char *campo;
+    int numCampo = 0;
+
+    reg->region = 0;
+    reg->whog = 0;
+    reg->tipo_hogar = 0;
+
+    campo = miStrtok(linea, " \t\n");
+    while(campo != NULL)
+   {
+    sacarComillasCampos(campo);
+//modifique los if a diferencia de los otros trozar porque aca es valido el NA si existe en el campo tipo_hogar
+    if(numCampo == pos->pos_region)
+    {
+        if(miStrcmp(campo,"NA") != 0)
+            reg->region = miAtoi(campo);
+    }
+    else if(numCampo == pos->pos_whog)
+    {
+        if(miStrcmp(campo,"NA") != 0)
+            reg->whog = miAtoi(campo);
+    }
+    //tipo_hogar admite NA
+    else if(numCampo == pos->pos_tipo_hogar)
+    {
+        if(miStrcmp(campo,"NA") == 0)
+            reg->tipo_hogar = -1;
+        else
+            reg->tipo_hogar = miAtoi(campo);
+    }
+
+    campo = miStrtok(NULL, " \t\n");
+    numCampo++;
+   }
+   //verifico registros validos
+    return (reg->region >= 1 && reg->region <= 6 && reg->whog > 0);
+}
+
 
