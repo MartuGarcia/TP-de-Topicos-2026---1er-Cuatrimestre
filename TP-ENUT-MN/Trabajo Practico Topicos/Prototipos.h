@@ -22,6 +22,7 @@ typedef struct
     int pos_tp_ocupacion;
     int pos_tp_trabajo;
     int pos_tp_tnr;
+    int pos_tipo_hogar; //la agrego para el punto 3) y reutilizar la funcion de ObtenerPosicion
 } PosicionesCampos;
 
 typedef struct
@@ -35,6 +36,7 @@ typedef struct
     int tp_ocupacion;
     int tp_trabajo;
     int tp_tnr;
+    int tipo_hogar;
     char grupoEdad[50];
 }Registros;
 
@@ -42,6 +44,11 @@ typedef struct
 void* crearVector(size_t capInicial,size_t tamElem);
 void destruirVector(void **vec);
 int redimensionarVector(void **vec, size_t *cap, size_t tamElem); //redimenciono si es necesario
+///matrices y memoria dinamica
+void** crearMatriz(int filas, int columnas, size_t tam);
+void inicializarMatriz(void **matriz, int filas, int columnas);
+void destruirMatriz(void** matriz, int filas);
+
 
 ///funciones de string.h y stdlib.h
 char* miStrcpy(char* destino, const char* origen);
@@ -68,6 +75,12 @@ void calcularGrupoEdad(int edad,char *grupoEdad);
 int insertarElementoPunto2(void **vec, size_t *ce, size_t *cap, void *elem, size_t tamElem);
 void mostrarPunto2(void *vec, size_t ce);
 
+/// Punto 3)
+//este punto trabaja con matrices dinamicas genericas
+//reutilice funciones como obtenerPosicionesCampos y sacarComillasCampos para poder trozar correctamente
+int trozarLineaPunto3(char *linea, Registros *reg, PosicionesCampos *pos);
+void leerArchivoPunto3(const char *nombreArchivo);
+void mostrarPunto3(void **mat, int filas, int columnas);
+
 
 #endif // FUNCIONES_H_INCLUDED
-
